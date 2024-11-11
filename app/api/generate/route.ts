@@ -7,10 +7,6 @@ export async function POST(request: Request) {
     const { title, subtitle, file_id } = await request.json()
     console.log('收到的参数:', { title, subtitle, file_id })
 
-    // 单次对话不需要传入会话ID， 见： https://www.coze.cn/docs/developer_guides/chat_v3#2824d907
-    // const conversation_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)
-    // console.log('生成的会话ID:', conversation_id)
-
     console.log('开始调用 Coze API 生成奖状...')
     const response = await fetch(`https://api.coze.cn/v3/chat`, {
       method: 'POST',
@@ -21,19 +17,19 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         bot_id: process.env.COZE_BOT_ID,
         user_id: "user_" + crypto.randomUUID(),
-        stream: false,
+        stream: true,
         auto_save_history: true,
         additional_messages: [
           {
             role: "user",
             content: JSON.stringify([
               {
-                type: "image",
-                file_url: file_id
+                type: "text",
+                text: `请根据这张照片生成一个奖状，标题是：${title}，颁奖词是：${subtitle}`
               },
               {
-                type: "text",
-                text: `title: ${title}\nsubtitle: ${subtitle}`
+                type: "image",
+                file_id: file_id
               }
             ]),
             content_type: "object_string"
@@ -42,24 +38,93 @@ export async function POST(request: Request) {
       })
     })
 
-    const data = await response.json()
-    console.log('收到 Coze API 响应:', data)
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('无法获取响应流')
+    }
+
+    let chatId: string | null = null
+    let imageUrl: string | null = null
+    let allMessages: string[] = []
+    const decoder = new TextDecoder()
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (!line.trim()) continue
+
+          if (line.startsWith('event:')) {
+            const event = line.slice(6).trim()
+            const dataLine = lines[lines.indexOf(line) + 1]
+            if (!dataLine?.startsWith('data:')) continue
+            
+            const data = dataLine.slice(5).trim()
+            if (!data || data === '"[DONE]"') continue
+
+            try {
+              const jsonData = JSON.parse(data)
+              console.log('收到事件:', event, '数据:', jsonData)
+
+              switch (event) {
+                case 'conversation.chat.created':
+                  chatId = jsonData.id
+                  console.log('创建会话成功, chat ID:', chatId)
+                  break
+
+                case 'conversation.message.completed':
+                  if (jsonData.role === 'assistant' && jsonData.content) {
+                    console.log('收到助手消息:', jsonData.type, jsonData.content)
+                    
+                    // 记录非工具类消息
+                    if (jsonData.type === 'answer') {
+                      allMessages.push(jsonData.content)
+                    }
+                    
+                    // 尝试提取图片URL
+                    if (!imageUrl) {
+                      const match = jsonData.content.match(/!\[图片\]\((.*?)\)/)
+                      if (match && match[1]) {
+                        imageUrl = match[1]
+                        console.log('成功提取图片URL:', imageUrl)
+                      }
+                    }
+                  }
+                  break
+
+                case 'conversation.chat.completed':
+                  console.log('会话完成，状态:', jsonData.status)
+                  break
+              }
+            } catch (e) {
+              console.error('解析事件数据失败:', e, '原始数据:', data)
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock()
+    }
+
+    console.log('处理完成，消息数量:', allMessages.length)
     
-    const imageUrl = extractImageUrl(data.msg)
-    console.log('提取的图片URL:', imageUrl)
-    
-    return NextResponse.json({ imageUrl, status: 'success' })
+    // 即使没有图片URL也返回消息
+    return NextResponse.json({ 
+      messages: allMessages,
+      imageUrl: imageUrl,
+      status: imageUrl ? 'success' : 'partial_success'
+    })
+
   } catch (error) {
     console.error('奖状生成失败:', error)
     return NextResponse.json(
-      { error: "Failed to generate certificate", status: 'error' },
+      { error: error instanceof Error ? error.message : "生成失败", status: 'error' },
       { status: 500 }
     )
   }
-}
-
-function extractImageUrl(message: string) {
-  console.log('正在从消息中提取图片URL:', message)
-  const urlMatch = message.match(/https?:\/\/[^\s<>"]+?\.(?:jpg|jpeg|gif|png)/i)
-  return urlMatch ? urlMatch[0] : null
 } 

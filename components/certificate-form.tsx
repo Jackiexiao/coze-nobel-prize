@@ -78,6 +78,7 @@ export function CertificateForm() {
       })
       
       const uploadData = await uploadResponse.json()
+
       if (uploadData.error) {
         throw new Error(uploadData.error)
       }
@@ -96,18 +97,31 @@ export function CertificateForm() {
         })
       })
 
-      setProgress('正在等待AI生成奖状（预计需要10-20秒）...')
+      setProgress('正在等待AI生成奖状（大约需要20秒）...')
       const data = await generateResponse.json()
       
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      
+      // 显示所有消息
+      if (data.messages && data.messages.length > 0) {
+        setProgress('AI返回消息：\n' + data.messages.join('\n\n'))
+      }
+
       if (data.imageUrl) {
-        setProgress('奖状生成完成！')
         setGeneratedImage(data.imageUrl)
         toast({
           title: "生成成功",
           description: "奖状已生成，可以保存使用了",
         })
       } else {
-        throw new Error('未能获取生成的图片')
+        // 即使没有图片也显示消息
+        toast({
+          variant: "destructive",
+          title: "生成部分成功",
+          description: "已收到AI回复，但未能生成奖状图片",
+        })
       }
     } catch (error) {
       console.error('生成过程出错:', error)
@@ -185,12 +199,20 @@ export function CertificateForm() {
               <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
                 <div className="h-full bg-primary animate-pulse"></div>
               </div>
-              <p className="text-sm text-muted-foreground text-center">{progress}</p>
+              <p className="text-sm text-muted-foreground text-center whitespace-pre-wrap">{progress}</p>
             </div>
           )}
 
           {generatedImage && (
-            <div className="mt-4">
+            <div className="mt-4 space-y-4">
+              {/* 显示AI回复消息 */}
+              <div className="rounded-lg bg-muted p-4">
+                <p className="text-sm whitespace-pre-wrap">
+                  {progress}
+                </p>
+              </div>
+              
+              {/* 显示生成的图片 */}
               <img 
                 src={generatedImage} 
                 alt="生成的奖状"
@@ -198,7 +220,7 @@ export function CertificateForm() {
               />
               <Button
                 variant="outline"
-                className="mt-2 w-full"
+                className="w-full"
                 onClick={() => window.open(generatedImage, '_blank')}
               >
                 下载奖状
