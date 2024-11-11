@@ -78,20 +78,25 @@ export async function POST(request: Request) {
                   break
 
                 case 'conversation.message.completed':
-                  if (jsonData.role === 'assistant' && jsonData.content) {
+                  if (jsonData.role === 'assistant') {
                     console.log('收到助手消息:', jsonData.type, jsonData.content)
                     
-                    // 记录非工具类消息
-                    if (jsonData.type === 'answer') {
-                      allMessages.push(jsonData.content)
-                    }
-                    
-                    // 尝试提取图片URL
-                    if (!imageUrl) {
-                      const match = jsonData.content.match(/!\[图片\]\((.*?)\)/)
-                      if (match && match[1]) {
-                        imageUrl = match[1]
-                        console.log('成功提取图片URL:', imageUrl)
+                    // 处理所有类型的消息
+                    if (typeof jsonData.content === 'string' && jsonData.content.trim()) {
+                      const formattedMessage = jsonData.content
+                        .trim()
+                        .replace(/\n{3,}/g, '\n\n')
+                      allMessages.push(formattedMessage)
+                      
+                      // 尝试从消息中提取图片URL
+                      const imageMatches = jsonData.content.match(/!\[.*?\]\((.*?)\)/g)
+                      if (imageMatches) {
+                        const lastImageMatch = imageMatches[imageMatches.length - 1]
+                        const urlMatch = lastImageMatch.match(/!\[.*?\]\((.*?)\)/)
+                        if (urlMatch && urlMatch[1]) {
+                          imageUrl = urlMatch[1]
+                          console.log('成功提取图片URL:', imageUrl)
+                        }
                       }
                     }
                   }
@@ -114,6 +119,13 @@ export async function POST(request: Request) {
     console.log('处理完成，消息数量:', allMessages.length)
     
     // 即使没有图片URL也返回消息
+    console.log('返回数据:', { 
+      messageCount: allMessages.length,
+      messages: allMessages,
+      imageUrl,
+      status: imageUrl ? 'success' : 'partial_success'
+    })
+
     return NextResponse.json({ 
       messages: allMessages,
       imageUrl: imageUrl,

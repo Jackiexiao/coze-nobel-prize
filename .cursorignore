@@ -1,0 +1,9 @@
+# Ignore all files in the `dist` directory
+dist/
+
+# Ignore all `.log` files
+*.log
+
+.env
+
+components/ui

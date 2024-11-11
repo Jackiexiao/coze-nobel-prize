@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import Image from "next/image"
+import ReactMarkdown from 'react-markdown'
 
 export function CertificateForm() {
   const [loading, setLoading] = useState(false)
@@ -104,9 +105,14 @@ export function CertificateForm() {
         throw new Error(data.error)
       }
       
-      // 显示所有消息
+      // 修改消息处理逻辑
       if (data.messages && data.messages.length > 0) {
-        setProgress('AI返回消息：\n' + data.messages.join('\n\n'))
+        // 确保消息是正确的 Markdown 格式
+        const formattedMessages = data.messages
+          .map((msg: string) => msg.trim())
+          .filter(Boolean)
+          .join('\n\n')
+        setProgress(formattedMessages)
       }
 
       if (data.imageUrl) {
@@ -116,7 +122,6 @@ export function CertificateForm() {
           description: "奖状已生成，可以保存使用了",
         })
       } else {
-        // 即使没有图片也显示消息
         toast({
           variant: "destructive",
           title: "生成部分成功",
@@ -205,11 +210,22 @@ export function CertificateForm() {
 
           {generatedImage && (
             <div className="mt-4 space-y-4">
-              {/* 显示AI回复消息 */}
+              {/* 修改 Markdown 显示部分 */}
               <div className="rounded-lg bg-muted p-4">
-                <p className="text-sm whitespace-pre-wrap">
+                <ReactMarkdown 
+                  className="prose prose-sm dark:prose-invert max-w-none"
+                  components={{
+                    img: () => null,
+                    p: ({children}) => <p className="mb-4 last:mb-0">{children}</p>,
+                    ul: ({children}) => <ul className="list-disc pl-4 mb-4">{children}</ul>,
+                    ol: ({children}) => <ol className="list-decimal pl-4 mb-4">{children}</ol>,
+                    li: ({children}) => <li className="mb-1">{children}</li>,
+                    code: ({children}) => <code className="bg-muted-foreground/20 rounded px-1">{children}</code>,
+                    pre: ({children}) => <pre className="bg-muted-foreground/20 p-2 rounded overflow-x-auto">{children}</pre>,
+                  }}
+                >
                   {progress}
-                </p>
+                </ReactMarkdown>
               </div>
               
               {/* 显示生成的图片 */}
