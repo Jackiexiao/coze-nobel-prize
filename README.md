@@ -2,8 +2,7 @@
 
 使用 AI 为每位参与者生成独特的奖状，记录每一个精彩瞬间。上传照片，填写奖项名称和颁奖词， 让我们为每一份努力喝彩！
 
-<!-- 使用 HTML 和 CSS 来控制图片大小 -->
-<img src="./public/demo-certificate.jpg" alt="demo" style="max-width: 50%;" />
+<img src="./public/demo-certificate.jpg" alt="demo" width="400" />
 
 ## Development
 
@@ -28,13 +27,13 @@ pnpm dev
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/YOUR_USERNAME/nextjs-shadcn.git
-cd nextjs-shadcn
+git clone https://github.com/jackiexiao/coze-nobel-prize.git
+cd coze-nobel-prize
 
 # 2. 安装依赖并构建
 pnpm install
 pnpm build
 
 # 3. 使用 PM2 运行
-pm2 start npm --name "nextjs-shadcn" -- start
+pm2 start npm --name "coze-nobel-prize" -- start
 ```
