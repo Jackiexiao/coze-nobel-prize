@@ -69,7 +69,10 @@ export async function POST(request: Request) {
 
             try {
               const jsonData = JSON.parse(data)
-              console.log('收到事件:', event, '数据:', jsonData)
+              
+              if (event !== 'conversation.message.delta') {
+                console.log('收到事件:', event, '数据:', jsonData)
+              }
 
               switch (event) {
                 case 'conversation.chat.created':
@@ -81,12 +84,9 @@ export async function POST(request: Request) {
                   if (jsonData.role === 'assistant' && jsonData.type === 'answer') {
                     console.log('收到助手消息:', jsonData.content)
                     
-                    // 只处理 answer 类型的消息
                     if (typeof jsonData.content === 'string' && jsonData.content.trim()) {
-                      // 将消息添加到数组
                       allMessages.push(jsonData.content.trim())
                       
-                      // 尝试从消息中提取图片URL
                       const urlMatch = jsonData.content.match(/!\[.*?\]\((.*?)\)/)
                       if (urlMatch && urlMatch[1]) {
                         imageUrl = urlMatch[1]
@@ -94,7 +94,6 @@ export async function POST(request: Request) {
                       }
                     }
                   } else if (jsonData.type === 'error') {
-                    // 处理错误消息
                     console.error('AI返回错误:', jsonData.content)
                     allMessages.push(`错误: ${jsonData.content}`)
                   }
@@ -114,10 +113,7 @@ export async function POST(request: Request) {
       reader.releaseLock()
     }
 
-    console.log('处理完成，消息数量:', allMessages.length)
-    
-    // 即使没有图片URL也返回消息
-    console.log('返回数据:', { 
+    console.log('处理完成，返回数据:', { 
       messageCount: allMessages.length,
       messages: allMessages,
       imageUrl,

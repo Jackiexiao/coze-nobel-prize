@@ -78,7 +78,7 @@ export default function Home() {
           <p>
             由{" "}
             <a 
-              href="https://github.com/your-repo" 
+              href="https://github.com/hackathonweekly/coze-nobel-prize" 
               target="_blank" 
               rel="noopener noreferrer"
               className="underline hover:text-primary transition-colors"

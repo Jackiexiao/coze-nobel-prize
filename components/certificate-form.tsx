@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import Image from "next/image"
 import ReactMarkdown from 'react-markdown'
 import { useDropzone } from 'react-dropzone'
 
@@ -76,7 +75,7 @@ export function CertificateForm() {
         throw new Error(uploadData.error)
       }
       
-      setProgress('文件上传完成，开始生成奖状...\n\n请耐心等待 10-20 秒，AI 正在为你精心制作奖状...')
+      setProgress('AI 正在为你精心制作奖状，请耐心等待 10-20 秒...')
       // 生成奖状
       const generateResponse = await fetch('/api/generate', {
         method: 'POST',
@@ -90,7 +89,6 @@ export function CertificateForm() {
         })
       })
 
-      setProgress('正在等待AI生成奖状（大约需要20秒）...')
       const data = await generateResponse.json()
       
       if (data.error) {
@@ -99,7 +97,6 @@ export function CertificateForm() {
       
       // 修改消息处理逻辑
       if (data.messages && data.messages.length > 0) {
-        // 不再移除图片链接
         const formattedMessages = data.messages
           .map((msg: string) => msg.trim())
           .filter(Boolean)
@@ -109,7 +106,7 @@ export function CertificateForm() {
 
       if (data.imageUrl) {
         console.log('Setting image URL:', data.imageUrl)
-        setPreviewUrl(data.imageUrl)
+        // 不要更新 previewUrl，而是保持原始上传的图片预览
         toast({
           title: "生成成功",
           description: "奖状已生成，可以保存使用了",
@@ -188,11 +185,10 @@ export function CertificateForm() {
             >
               <input {...getInputProps()} />
               {previewUrl ? (
-                <Image
+                <img
                   src={previewUrl}
                   alt="照片预览"
-                  fill
-                  className="object-cover transition-transform hover:scale-105"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground p-4">
