@@ -36,4 +36,23 @@ pnpm build
 
 # 3. 使用 PM2 运行
 pm2 start npm --name "coze-nobel-prize" -- start
+# or 
+# 启动应用
+pm2 start ecosystem.config.js
+
+# 重启应用
+pm2 restart ecosystem.config.js
+
+# 停止应用
+pm2 stop ecosystem.config.js
+
+# 删除应用
+pm2 delete ecosystem.config.js
+
+# 查看日志
+pm2 logs coze-nobel-prize
+
+# 查看监控
+pm2 monit
 ```
+
