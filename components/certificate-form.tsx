@@ -107,15 +107,17 @@ export function CertificateForm() {
       
       // 修改消息处理逻辑
       if (data.messages && data.messages.length > 0) {
-        // 确保消息是正确的 Markdown 格式
+        // 移除消息中的图片链接，只显示文本部分
         const formattedMessages = data.messages
-          .map((msg: string) => msg.trim())
-          .filter(Boolean)
+          .map((msg: string) => msg.replace(/!\[.*?\]\(.*?\)/g, '').trim())
+          .filter(Boolean)  // 移除空消息
           .join('\n\n')
+        console.log('Formatted messages:', formattedMessages)
         setProgress(formattedMessages)
       }
 
       if (data.imageUrl) {
+        console.log('Setting image URL:', data.imageUrl)
         setGeneratedImage(data.imageUrl)
         toast({
           title: "生成成功",
@@ -208,27 +210,42 @@ export function CertificateForm() {
             </div>
           )}
 
+          {progress && (
+            <div className="rounded-lg bg-muted p-4">
+              <ReactMarkdown 
+                className="prose prose-sm dark:prose-invert max-w-none"
+                components={{
+                  img: ({src, alt}) => (
+                    <div className="space-y-4">
+                      <img 
+                        src={src} 
+                        alt={alt || '生成的图片'} 
+                        className="w-full rounded-lg shadow-lg" 
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.open(src, '_blank')}
+                      >
+                        下载奖状
+                      </Button>
+                    </div>
+                  ),
+                  p: ({children}) => <p className="mb-4 last:mb-0">{children}</p>,
+                  ul: ({children}) => <ul className="list-disc pl-4 mb-4">{children}</ul>,
+                  ol: ({children}) => <ol className="list-decimal pl-4 mb-4">{children}</ol>,
+                  li: ({children}) => <li className="mb-1">{children}</li>,
+                  code: ({children}) => <code className="bg-muted-foreground/20 rounded px-1">{children}</code>,
+                  pre: ({children}) => <pre className="bg-muted-foreground/20 p-2 rounded overflow-x-auto">{children}</pre>,
+                }}
+              >
+                {progress}
+              </ReactMarkdown>
+            </div>
+          )}
+
           {generatedImage && (
             <div className="mt-4 space-y-4">
-              {/* 修改 Markdown 显示部分 */}
-              <div className="rounded-lg bg-muted p-4">
-                <ReactMarkdown 
-                  className="prose prose-sm dark:prose-invert max-w-none"
-                  components={{
-                    img: () => null,
-                    p: ({children}) => <p className="mb-4 last:mb-0">{children}</p>,
-                    ul: ({children}) => <ul className="list-disc pl-4 mb-4">{children}</ul>,
-                    ol: ({children}) => <ol className="list-decimal pl-4 mb-4">{children}</ol>,
-                    li: ({children}) => <li className="mb-1">{children}</li>,
-                    code: ({children}) => <code className="bg-muted-foreground/20 rounded px-1">{children}</code>,
-                    pre: ({children}) => <pre className="bg-muted-foreground/20 p-2 rounded overflow-x-auto">{children}</pre>,
-                  }}
-                >
-                  {progress}
-                </ReactMarkdown>
-              </div>
-              
-              {/* 显示生成的图片 */}
               <img 
                 src={generatedImage} 
                 alt="生成的奖状"

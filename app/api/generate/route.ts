@@ -78,27 +78,25 @@ export async function POST(request: Request) {
                   break
 
                 case 'conversation.message.completed':
-                  if (jsonData.role === 'assistant') {
-                    console.log('收到助手消息:', jsonData.type, jsonData.content)
+                  if (jsonData.role === 'assistant' && jsonData.type === 'answer') {
+                    console.log('收到助手消息:', jsonData.content)
                     
-                    // 处理所有类型的消息
+                    // 只处理 answer 类型的消息
                     if (typeof jsonData.content === 'string' && jsonData.content.trim()) {
-                      const formattedMessage = jsonData.content
-                        .trim()
-                        .replace(/\n{3,}/g, '\n\n')
-                      allMessages.push(formattedMessage)
+                      // 将消息添加到数组
+                      allMessages.push(jsonData.content.trim())
                       
                       // 尝试从消息中提取图片URL
-                      const imageMatches = jsonData.content.match(/!\[.*?\]\((.*?)\)/g)
-                      if (imageMatches) {
-                        const lastImageMatch = imageMatches[imageMatches.length - 1]
-                        const urlMatch = lastImageMatch.match(/!\[.*?\]\((.*?)\)/)
-                        if (urlMatch && urlMatch[1]) {
-                          imageUrl = urlMatch[1]
-                          console.log('成功提取图片URL:', imageUrl)
-                        }
+                      const urlMatch = jsonData.content.match(/!\[.*?\]\((.*?)\)/)
+                      if (urlMatch && urlMatch[1]) {
+                        imageUrl = urlMatch[1]
+                        console.log('成功提取图片URL:', imageUrl)
                       }
                     }
+                  } else if (jsonData.type === 'error') {
+                    // 处理错误消息
+                    console.error('AI返回错误:', jsonData.content)
+                    allMessages.push(`错误: ${jsonData.content}`)
                   }
                   break
 
