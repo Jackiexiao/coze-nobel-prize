@@ -57,7 +57,6 @@ export function CertificateForm() {
     }
 
     setLoading(true)
-    setProgress('准备上传文件...')
     try {
       // 上传文件
       const formData = new FormData()
@@ -75,8 +74,8 @@ export function CertificateForm() {
         throw new Error(uploadData.error)
       }
       
-      setProgress('AI 正在为你精心制作奖状，请耐心等待 10-20 秒...')
       // 生成奖状
+      setProgress('AI 正在为你精心制作奖状，请耐心等待 10-20 秒...')
       const generateResponse = await fetch('/api/generate', {
         method: 'POST',
         headers: {
@@ -105,8 +104,6 @@ export function CertificateForm() {
       }
 
       if (data.imageUrl) {
-        console.log('Setting image URL:', data.imageUrl)
-        // 不要更新 previewUrl，而是保持原始上传的图片预览
         toast({
           title: "生成成功",
           description: "奖状已生成，可以保存使用了",
@@ -125,6 +122,8 @@ export function CertificateForm() {
         title: "生成失败",
         description: error instanceof Error ? error.message : "请稍后重试",
       })
+      // 在错误时也更新进度提示
+      setProgress(error instanceof Error ? `错误: ${error.message}` : "生成失败，请稍后重试")
     } finally {
       setLoading(false)
     }
